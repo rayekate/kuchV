@@ -1,0 +1,30 @@
+name: Deploy Node App
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy & Restart
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: root
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            cd /root/test/kuchV
+            git pull origin main
+            npm install
+            pkill node || true
+            node app.js > app.log 2>&1 &
+            sleep 3
+            pgrep node || (echo "Node app crashed!" && tail -n 50 app.log && exit 1)
+            tail -n 50 app.log
