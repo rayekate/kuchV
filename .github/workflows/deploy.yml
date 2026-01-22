@@ -24,7 +24,7 @@ jobs:
             git pull origin main
             npm install
             pkill node || true
-            node app.js > app.log 2>&1 &
+            nohup node app.js > app.log 2>&1 &
             sleep 3
             pgrep node || (echo "Node app crashed!" && tail -n 50 app.log && exit 1)
             tail -n 50 app.log
