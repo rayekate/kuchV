@@ -41,5 +41,5 @@ jobs:
             echo "📄 ===== Application Log (last 50 lines) ====="
             tail -n 50 /root/test/kuchV/app.log || echo "No app.log found"
 
-            echo "📄 ===== systemd Log (last 30 lines) ====="
-            journalctl -u node-app -n 30 --no-pager
+            #echo "📄 ===== systemd Log (last 30 lines) ====="
+            #journalctl -u node-app -n 30 --no-pager
