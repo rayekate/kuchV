@@ -13,19 +13,33 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Deploy & Restart
+      - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST }}
           username: root
           key: ${{ secrets.SSH_KEY }}
           script: |
+            echo "📂 Moving to app directory"
             cd /root/test/kuchV
+
+            echo "📥 Pulling latest code"
             git pull origin main
+
+            echo "📦 Installing dependencies"
             npm install
-            pkill node || true
-            nohup node app.js > app.log 2>&1 &
+
+            echo "🔁 Restarting Node systemd service"
+            systemctl restart node-app
+
+            echo "🔁 Reloading Nginx"
+            systemctl reload nginx
+
+            echo "⏳ Waiting for app to boot"
             sleep 3
-            pgrep node && echo "Node is running"
-            pgrep node || (echo "Node app crashed!" && tail -n 50 app.log && exit 1)
-            tail -n 50 app.log
+
+            echo "📄 ===== Application Log (last 50 lines) ====="
+            tail -n 50 /root/test/kuchV/app.log || echo "No app.log found"
+
+            echo "📄 ===== systemd Log (last 30 lines) ====="
+            journalctl -u node-app -n 30 --no-pager
