@@ -53,12 +53,12 @@ const generateTokens = (user) => {
  */
 export const register = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { name, email, password } = req.body;
 
     // 1️⃣ Basic validation
-    if (!email || !password) {
+    if (!name || !email || !password) {
       return res.status(400).json({
-        message: "Email and password are required"
+        message: "Name, email, and password are required"
       });
     }
 
@@ -98,6 +98,7 @@ export const register = async (req, res) => {
     // 7️⃣ Create user
     const user = await User.create({
       customerId: generateCustomerId(),
+      name,
       email,
       passwordHash,
       referralCode,

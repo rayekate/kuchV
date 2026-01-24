@@ -52,6 +52,7 @@ const userSchema = new mongoose.Schema(
     // Profile Fields
     name: {
       type: String,
+      required: true,
       trim: true
     },
 
