@@ -76,15 +76,18 @@ export const sendTransactionalEmail = async (user, type, data) => {
 
     case "PLAN_APPROVED":
       subject = `Your plan has been approved! - ${WEBSITE_NAME}`;
-      text = `Hello,\n\nWe’re writing to let you know that your plan request on ${WEBSITE_NAME} has been reviewed and approved.\n\nPlan details:\n- Plan name: ${data.planName}\n- Effective from: ${data.startDate}`;
+      text = `Hello,\n\nWe’re writing to let you know that your plan request on ${WEBSITE_NAME} has been reviewed and approved.\n\nPlan details:\n- Plan: ${data.planName}\n- Amount: $${data.amount}\n- ROI: ${data.planRoi}% Daily\n- Duration: ${data.planDuration} Days\n- Effective from: ${data.startDate}`;
       html = `
         <div style="${containerStyle}">
           <p>Hello,</p>
           <p>We’re writing to let you know that your plan request on <b>${WEBSITE_NAME}</b> has been reviewed and approved.</p>
-          <h3 style="${h2Style}">Plan details</h3>
+          <h3 style="${h2Style}">Investment Details</h3>
           <ul style="color: #4b5563;">
-            <li>Plan name: <b>${data.planName}</b></li>
-            <li>Effective from: <b>${data.startDate}</b></li>
+            <li>Plan Name: <b>${data.planName}</b></li>
+            <li>Invested Amount: <b>$${data.amount}</b></li>
+            <li>Daily ROI: <b>${data.planRoi}%</b></li>
+            <li>Duration: <b>${data.planDuration} Days</b></li>
+            <li>Start Date: <b>${data.startDate}</b></li>
           </ul>
           <p>You now have access to the features and limits included in this plan. You can log in to your account to start using them immediately.</p>
           <p style="font-size: 14px; color: #6b7280;">If this request was not made by you, please contact us as soon as possible.</p>
@@ -95,12 +98,18 @@ export const sendTransactionalEmail = async (user, type, data) => {
 
     case "DEPOSIT_REQUESTED":
       subject = `Deposit Request Received - ${WEBSITE_NAME}`;
-      text = `Hello,\n\nWe’ve received your deposit request on ${WEBSITE_NAME}.\n\nYour request is currently under review by our admin team.`;
+      text = `Hello,\n\nWe’ve received your deposit request on ${WEBSITE_NAME}.\n\nPlan: ${data.planName}\nAmount: ${data.amount} ${data.coin}\nROI: ${data.planRoi}% Daily\nDuration: ${data.planDuration} Days\n\nYour request is currently under review by our admin team.`;
       html = `
         <div style="${containerStyle}">
           <p>Hello,</p>
           <p>We’ve received your deposit request on <b>${WEBSITE_NAME}</b>.</p>
-          <p>Your request is currently under review by our admin team. Once the review is completed, your account plan will be approved and activated accordingly.</p>
+          <div style="background: #f9fafb; padding: 15px; border-radius: 8px; border: 1px solid #e5e7eb; margin: 15px 0;">
+             <p style="margin: 0; color: #111827; font-weight: bold;">Plan: ${data.planName}</p>
+             <p style="margin: 5px 0 0 0; color: #4b5563;">Amount: ${data.amount} ${data.coin}</p>
+             <p style="margin: 5px 0 0 0; color: #4b5563;">ROI: ${data.planRoi}% Daily</p>
+             <p style="margin: 5px 0 0 0; color: #4b5563;">Duration: ${data.planDuration} Days</p>
+          </div>
+          <p>Your request is currently under review by our admin team. Once the review is completed, your investment plan will be active.</p>
           <h3 style="${h2Style}">Review timeline</h3>
           <ul style="color: #4b5563;">
             <li>Approval usually takes 6 to 12 hours</li>
@@ -115,11 +124,11 @@ export const sendTransactionalEmail = async (user, type, data) => {
 
     case "DEPOSIT_REJECTED":
       subject = `Deposit Request Update - ${WEBSITE_NAME}`;
-      text = `Hello,\n\nUnfortunately, your deposit request on ${WEBSITE_NAME} could not be approved at this time.\n\nReason: ${data.reason || 'None provided'}`;
+      text = `Hello,\n\nUnfortunately, your deposit request for ${data.planName || 'Plan'} on ${WEBSITE_NAME} could not be approved at this time.\n\nReason: ${data.reason || 'None provided'}`;
       html = `
         <div style="${containerStyle}">
           <p>Hello,</p>
-          <p>Unfortunately, your deposit request on <b>${WEBSITE_NAME}</b> has been reviewed and could not be approved at this time.</p>
+          <p>Unfortunately, your deposit request for <b>${data.planName || 'Investment Plan'}</b> on <b>${WEBSITE_NAME}</b> has been reviewed and could not be approved at this time.</p>
           <div style="background: #fef2f2; border-left: 4px solid #ef4444; padding: 15px; margin: 20px 0;">
             <p style="margin: 0; font-size: 14px;"><b>Reason for rejection:</b></p>
             <p style="margin: 5px 0 0 0; color: #b91c1c;">${data.reason || "Please check the details of your request or contact support."}</p>

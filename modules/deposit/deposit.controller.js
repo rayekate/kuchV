@@ -78,9 +78,19 @@ export const createDeposit = async (req, res) => {
       // Notify user via email
       console.log(`[DEPOSIT] Attempting to find user ${req.user.userId} for email...`);
       const user = await User.findById(req.user.userId);
+      
+      // Fetch Plan details for email
+      const plan = await Plan.findById(planId);
+
       if (user) {
         console.log(`[DEPOSIT] User found: ${user.email}. Triggering DEPOSIT_REQUESTED email.`);
-        sendTransactionalEmail(user, "DEPOSIT_REQUESTED", {}).catch(err => 
+        sendTransactionalEmail(user, "DEPOSIT_REQUESTED", {
+            amount: claimedAmount,
+            coin: adminWallet.coin,
+            planName: plan ? plan.name : 'Investment Plan',
+            planRoi: plan ? plan.dailyRoi : 0,
+            planDuration: plan ? plan.durationDays : 0
+        }).catch(err => 
             console.error("[DEPOSIT_REQUEST_NOTIFICATION] Error:", err.message)
         );
       } else {
@@ -219,7 +229,10 @@ export const approveDeposit = async (req, res) => {
         console.log(`[DEPOSIT] User found: ${depositUser.email}. Triggering PLAN_APPROVED email.`);
         sendTransactionalEmail(depositUser, "PLAN_APPROVED", {
             planName: plan.name,
-            startDate: new Date().toLocaleDateString()
+            startDate: new Date().toLocaleDateString(),
+            amount: approvedAmount,
+            planRoi: plan.dailyRoi,
+            planDuration: plan.durationDays
         }).catch(err => console.error("[PLAN_APPROVED_NOTIFICATION] Error:", err.message));
     } else {
         console.error(`[DEPOSIT] User ${deposit.userId} NOT found for approval email.`);
@@ -359,13 +372,18 @@ export const rejectDeposit = async (req, res) => {
 
     // Email Notification
     console.log(`[DEPOSIT] Attempting to find user ${deposit.userId} for rejection email...`);
+    // Populate plan to get name
+    const depositWithPlan = await Deposit.findById(deposit._id).populate('planId');
+    const planName = depositWithPlan.planId ? depositWithPlan.planId.name : 'Classic Plan';
+
     const depositUser = await User.findById(deposit.userId);
     if (depositUser) {
         console.log(`[DEPOSIT] User found: ${depositUser.email}. Triggering DEPOSIT_REJECTED email.`);
         sendTransactionalEmail(depositUser, "DEPOSIT_REJECTED", {
             amount: deposit.claimedAmount,
             coin: deposit.coin,
-            reason: remarks
+            reason: remarks,
+            planName: planName
         }).catch(err => console.error("[DEPOSIT_REJECTED_NOTIFICATION] Error:", err.message));
     } else {
         console.error(`[DEPOSIT] User ${deposit.userId} NOT found for rejection email.`);
