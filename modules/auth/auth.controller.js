@@ -14,7 +14,7 @@ import { getOrCreateWallet } from "../wallet/wallet.service.js";
  * Helper: generate 6-digit OTP
  */
 const generateOtp = () => {
-  return crypto.randomInt(100000, 999999).toString();
+  return crypto.randomInt(100000, 1000000).toString();
 };
 
 const generateCustomerId = () => {
@@ -83,29 +83,17 @@ export const register = async (req, res) => {
         if (referrer) referredBy = referrer._id;
     }
 
-    // 6️⃣ Check Settings
-    const settings = await Settings.getSingleton();
-    console.log("DEBUG: Settings fetched:", settings); // LOG
-    const emailVerificationRequired = settings.emailVerificationRequired;
-    console.log("DEBUG: emailVerificationRequired:", emailVerificationRequired); // LOG
+    // 6️⃣ Always require OTP for new registrations
+    console.log("DEBUG: Mandatory OTP for registration. Generating..."); 
+    const otp = generateOtp();
+    const otpData = {
+        code: otp,
+        expiresAt: Date.now() + 10 * 60 * 1000 // 10 mins
+    };
 
-    let otpData = {};
-    let isVerified = false;
-
-    if (emailVerificationRequired) {
-        console.log("DEBUG: OTP Required. Generating..."); // LOG
-        const otp = generateOtp();
-        otpData = {
-            code: otp,
-            expiresAt: Date.now() + 10 * 60 * 1000 // 10 mins
-        };
-        // Send Email
-        console.log("DEBUG: Sending OTP email to:", email, "Code:", otp); // LOG
-        await sendTransactionalEmail({ email }, "REGISTRATION_OTP", { otp });
-    } else {
-        console.log("DEBUG: OTP NOT Required. Auto-verifying."); // LOG
-        isVerified = true; // Auto-verify if setting is off
-    }
+    // Send Email
+    console.log("DEBUG: Sending Registration OTP email to:", email, "Code:", otp); 
+    await sendTransactionalEmail({ email }, "REGISTRATION_OTP", { otp });
 
     // 7️⃣ Create user
     const user = await User.create({
@@ -114,7 +102,7 @@ export const register = async (req, res) => {
       passwordHash,
       referralCode,
       referredBy,
-      isEmailVerified: isVerified,
+      isEmailVerified: false,
       emailOtp: otpData
     });
 
@@ -123,18 +111,12 @@ export const register = async (req, res) => {
     // 7.5 Create Wallet immediately
     await getOrCreateWallet(user._id);
 
-    // 8️⃣ Response
-    if (emailVerificationRequired) {
-        console.log("DEBUG: Returning requiresOtp: true"); // LOG
-        return res.status(200).json({
-            message: "OTP sent to email. Please verify.",
-            requiresOtp: true,
-            email: user.email
-        });
-    }
-
-    return res.status(201).json({
-      message: "Registration successful."
+    // 8️⃣ Response: Always return requiresOtp: true for sign-up
+    console.log("DEBUG: Returning requiresOtp: true for new registration");
+    return res.status(200).json({
+        message: "Registration semi-successful. OTP sent to email. Please verify.",
+        requiresOtp: true,
+        email: user.email
     });
 
   } catch (error) {
@@ -170,10 +152,10 @@ export const verifyEmailOtp = async (req, res) => {
     }
 
     // 1️⃣ Validate OTP
-    if (
-      user.emailOtp.code !== otp ||
-      user.emailOtp.expiresAt < Date.now()
-    ) {
+    const storedOtp = user.emailOtp.code;
+    const isExpired = new Date(user.emailOtp.expiresAt).getTime() < Date.now();
+
+    if (String(storedOtp) !== String(otp) || isExpired) {
       return res.status(400).json({
         message: "Invalid or expired OTP"
       });
@@ -187,13 +169,13 @@ export const verifyEmailOtp = async (req, res) => {
     // 3️⃣ Issue JWT (Same logic as login) - Issue tokens so they are logged in immediately
     const accessToken = jwt.sign(
         { userId: user._id, customerId: user.customerId, role: user.role },
-        process.env.JWT_ACCESS_SECRET,
+        jwtConfig.accessToken.secret,
         { expiresIn: "15m" }
     );
 
     const refreshToken = jwt.sign(
         { userId: user._id },
-        process.env.JWT_REFRESH_SECRET,
+        jwtConfig.refreshToken.secret,
         { expiresIn: "7d" }
     );
       
@@ -284,13 +266,13 @@ export const login = async (req, res) => {
 
   const accessToken = jwt.sign(
     { userId: user._id, customerId: user.customerId, role: user.role },
-    process.env.JWT_ACCESS_SECRET,
+    jwtConfig.accessToken.secret,
     { expiresIn: "15m" }
   );
 
   const refreshToken = jwt.sign(
     { userId: user._id },
-    process.env.JWT_REFRESH_SECRET,
+    jwtConfig.refreshToken.secret,
     { expiresIn: "7d" }
   );
 
@@ -325,7 +307,7 @@ export const refreshToken = async (req, res) => {
   
     try {
       // 2. Verify refresh token
-      const decoded = jwt.verify(token, process.env.JWT_REFRESH_SECRET);
+      const decoded = jwt.verify(token, jwtConfig.refreshToken.secret);
   
       // 3. Ensure user still exists
       const user = await User.findById(decoded.userId);
@@ -340,7 +322,7 @@ export const refreshToken = async (req, res) => {
       // 4. Issue new access token
       const newAccessToken = jwt.sign(
         { userId: user._id, customerId: user.customerId , role: user.role},
-        process.env.JWT_ACCESS_SECRET,
+        jwtConfig.accessToken.secret,
         { expiresIn: "15m" }
       );
   
@@ -433,7 +415,10 @@ export const resetPassword = async (req, res) => {
       return res.status(400).json({ message: "Invalid request" });
     }
 
-    if (user.emailOtp.code !== otp || user.emailOtp.expiresAt < Date.now()) {
+    const storedOtp = user.emailOtp.code;
+    const isExpired = new Date(user.emailOtp.expiresAt).getTime() < Date.now();
+
+    if (String(storedOtp) !== String(otp) || isExpired) {
       return res.status(400).json({ message: "Invalid or expired OTP" });
     }
 

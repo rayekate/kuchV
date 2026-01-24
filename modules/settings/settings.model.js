@@ -64,7 +64,7 @@ const settingsSchema = new mongoose.Schema({
   },
   emailVerificationRequired: {
     type: Boolean,
-    default: false
+    default: true
   },
   requireWithdrawVerification: {
     type: Boolean,
