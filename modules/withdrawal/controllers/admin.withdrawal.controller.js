@@ -1,4 +1,5 @@
 import { sendNotification } from "../../notification/notification.service.js"; // Correct Path
+import { sendTransactionalEmail } from "../../notification/email-notification.service.js";
 // modules/withdrawal/controllers/admin.withdrawal.controller.js
 import Withdrawal from "../withdrawal.model.js";
 import mongoose from "mongoose";
@@ -82,22 +83,15 @@ export const rejectWithdrawal = async (req, res) => {
     await session.commitTransaction();
     session.endSession();
       
-      const user = await User.findById(withdrawal.userId).select("email customerId");
+      const user = await User.findById(withdrawal.userId);
 
-sendEmail({
-  to: user.email,
-  subject: "Withdrawal Rejected",
-  html: buildWithdrawalRejectedHTML({
-    customerId: user.customerId,
-    amount: withdrawal.amount,
-    asset: withdrawal.asset,
-    network: withdrawal.network,
-    destinationAddress: withdrawal.destinationAddress,
-    reason: withdrawal.rejectionReason,
-    rejectedAt: new Date().toISOString()
-  }),
-  text: `Your withdrawal of ${withdrawal.amount} ${withdrawal.asset} was rejected. Reason: ${withdrawal.rejectionReason}`
-});
+      if (user) {
+        sendTransactionalEmail(user, "WITHDRAWAL_REJECTED", {
+            amount: withdrawal.amount,
+            coin: withdrawal.asset,
+            reason: withdrawal.rejectionReason
+        }).catch(err => console.error("[WITHDRAWAL_REJECTED_NOTIFICATION] Error:", err.message));
+      }
 
     sendNotification(
         withdrawal.userId,
@@ -150,6 +144,16 @@ export const approveWithdrawal = async (req, res) => {
       "Your withdrawal request has been approved and is processing.",
       "withdrawal"
   );
+
+  // Email Notification
+  const user = await User.findById(withdrawal.userId);
+  if (user) {
+    sendTransactionalEmail(user, "WITHDRAWAL_APPROVED", {
+        amount: withdrawal.amount,
+        coin: withdrawal.asset,
+        address: withdrawal.destinationAddress
+    }).catch(err => console.error("[WITHDRAWAL_APPROVED_NOTIFICATION] Error:", err.message));
+  }
 
   res.json({
     message: "Withdrawal approved. Awaiting transaction confirmation."
@@ -215,7 +219,10 @@ export const confirmWithdrawal = async (req, res) => {
       await session.commitTransaction();
       session.endSession();
         
-      const user = await User.findById(withdrawal.userId).select("email customerId");
+      const user = await User.findById(withdrawal.userId);
+      if (!user) {
+        throw new Error("Withdrawal user not found");
+      }
 
       // NOTIFICATION
       sendNotification(
@@ -225,20 +232,12 @@ export const confirmWithdrawal = async (req, res) => {
           "withdrawal"
       );
 
-      sendEmail({
-        to: user.email,
-        subject: "Withdrawal Completed",
-        html: buildWithdrawalCompletedHTML({
-          customerId: user.customerId,
-          amount: withdrawal.amount,
-          asset: withdrawal.asset,
-          network: withdrawal.network,
-          destinationAddress: withdrawal.destinationAddress,
-          txHash: withdrawal.txHash || "N/A",
-          completedAt: new Date().toISOString()
-        }),
-        text: `Your withdrawal of ${withdrawal.amount} ${withdrawal.asset} has been completed.`
-      }); 
+      // Email Notification
+      sendTransactionalEmail(user, "WITHDRAWAL_APPROVED", { // Re-using approved template or can add COMPLETED
+        amount: withdrawal.amount,
+        coin: withdrawal.asset,
+        txid: withdrawal.txHash
+      }).catch(err => console.error("[WITHDRAWAL_COMPLETED_NOTIFICATION] Error:", err.message));
   
       return res.json({
         message: "Withdrawal completed successfully with proof",

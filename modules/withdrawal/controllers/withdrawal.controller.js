@@ -1,6 +1,6 @@
 import User from "../../user/user.model.js";
+import { sendTransactionalEmail } from "../../notification/email-notification.service.js";
 import { Settings } from "../../settings/settings.model.js";
-import { sendOtpEmail } from "../../auth/auth-email.service.js";
 import { getOrCreateWallet } from "../../wallet/wallet.service.js";
 import Withdrawal from "../withdrawal.model.js";
 import Ledger from "../../ledger/ledger.model.js";
@@ -25,7 +25,7 @@ export const requestWithdrawalOtp = async (req, res) => {
     };
     await user.save();
 
-    await sendOtpEmail(user.email, otp);
+    await sendTransactionalEmail(user, "LOGIN_OTP", { otp });
     res.json({ message: "OTP sent to your email" });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -64,8 +64,8 @@ export const createWithdrawal = async (req, res) => {
         };
         await user.save({ session });
         
-        // Send OTP via Email (Error will propagate to main catch and abort transaction)
-        await sendOtpEmail(user.email, otpCode);
+        // Send OTP via Email
+        await sendTransactionalEmail(user, "LOGIN_OTP", { otp: otpCode });
         
         await session.commitTransaction();
         session.endSession();
@@ -213,6 +213,15 @@ export const createWithdrawal = async (req, res) => {
         `Your withdrawal request for $${amount} (${asset}) has been submitted and is pending approval.`,
         "withdrawal"
     );
+
+    // Email Notification
+    if (user) {
+        sendTransactionalEmail(user, "WITHDRAWAL_REQUESTED", {
+            amount,
+            coin: asset,
+            address: destinationAddress
+        }).catch(err => console.error("[WITHDRAWAL_REQUEST_NOTIFICATION] Error:", err.message));
+    }
 
     // 5. Commit
     await session.commitTransaction();

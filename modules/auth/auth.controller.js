@@ -7,7 +7,7 @@ import { jwtConfig } from "../../config/jwt.js";
 
 
 import { Settings } from "../settings/settings.model.js";
-import { sendOtpEmail } from "../auth/auth-email.service.js";
+import { sendTransactionalEmail } from "../notification/email-notification.service.js";
 import { getOrCreateWallet } from "../wallet/wallet.service.js";
 
 /**
@@ -101,7 +101,7 @@ export const register = async (req, res) => {
         };
         // Send Email
         console.log("DEBUG: Sending OTP email to:", email, "Code:", otp); // LOG
-        await sendOtpEmail(email, otp);
+        await sendTransactionalEmail({ email }, "REGISTRATION_OTP", { otp });
     } else {
         console.log("DEBUG: OTP NOT Required. Auto-verifying."); // LOG
         isVerified = true; // Auto-verify if setting is off
@@ -268,7 +268,7 @@ export const login = async (req, res) => {
       console.log("DEBUG LOGIN: OTP generated and saved to user:", user.email); // LOG
       
       try {
-        await sendOtpEmail(user.email, otp);
+        await sendTransactionalEmail(user, "LOGIN_OTP", { otp });
         console.log("DEBUG LOGIN: Email sent to", user.email); // LOG
       } catch (err) {
         console.error("DEBUG LOGIN: Failed to send OTP:", err);
@@ -407,7 +407,7 @@ export const forgotPassword = async (req, res) => {
     };
     await user.save();
 
-    await sendOtpEmail(email, otp, "Password Reset");
+    await sendTransactionalEmail(user, "REGISTRATION_OTP", { otp });
 
     res.json({ message: "Reset OTP sent to your email" });
   } catch (error) {

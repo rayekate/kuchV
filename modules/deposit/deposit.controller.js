@@ -1,4 +1,5 @@
 import { sendNotification } from "../notification/notification.service.js";
+import { sendTransactionalEmail } from "../notification/email-notification.service.js";
 // src/modules/deposit/deposit.controller.js
 import Deposit from "./deposit.model.js";
 import AdminWallet from "../admin-wallet/adminWallet.model.js";
@@ -73,6 +74,18 @@ export const createDeposit = async (req, res) => {
         message: "Deposit submitted successfully",
         deposit
       });
+
+      // Notify user via email
+      console.log(`[DEPOSIT] Attempting to find user ${req.user.userId} for email...`);
+      const user = await User.findById(req.user.userId);
+      if (user) {
+        console.log(`[DEPOSIT] User found: ${user.email}. Triggering DEPOSIT_REQUESTED email.`);
+        sendTransactionalEmail(user, "DEPOSIT_REQUESTED", {}).catch(err => 
+            console.error("[DEPOSIT_REQUEST_NOTIFICATION] Error:", err.message)
+        );
+      } else {
+        console.error(`[DEPOSIT] User ${req.user.userId} NOT found for email.`);
+      }
     }
   );
 
@@ -198,6 +211,19 @@ export const approveDeposit = async (req, res) => {
         `Your deposit of $${approvedAmount} has been approved and invested successfully.`, 
         "deposit"
     );
+
+    // Email Notification
+    console.log(`[DEPOSIT] Attempting to find user ${deposit.userId} for approval email...`);
+    const depositUser = await User.findById(deposit.userId).session(session);
+    if (depositUser) {
+        console.log(`[DEPOSIT] User found: ${depositUser.email}. Triggering PLAN_APPROVED email.`);
+        sendTransactionalEmail(depositUser, "PLAN_APPROVED", {
+            planName: plan.name,
+            startDate: new Date().toLocaleDateString()
+        }).catch(err => console.error("[PLAN_APPROVED_NOTIFICATION] Error:", err.message));
+    } else {
+        console.error(`[DEPOSIT] User ${deposit.userId} NOT found for approval email.`);
+    }
 
     // 9️⃣ Referral Bonus Logic
     const user = await User.findById(deposit.userId).session(session);
@@ -330,6 +356,20 @@ export const rejectDeposit = async (req, res) => {
         `Your deposit was rejected. Reason: ${remarks}`, 
         "deposit"
     );
+
+    // Email Notification
+    console.log(`[DEPOSIT] Attempting to find user ${deposit.userId} for rejection email...`);
+    const depositUser = await User.findById(deposit.userId);
+    if (depositUser) {
+        console.log(`[DEPOSIT] User found: ${depositUser.email}. Triggering DEPOSIT_REJECTED email.`);
+        sendTransactionalEmail(depositUser, "DEPOSIT_REJECTED", {
+            amount: deposit.claimedAmount,
+            coin: deposit.coin,
+            reason: remarks
+        }).catch(err => console.error("[DEPOSIT_REJECTED_NOTIFICATION] Error:", err.message));
+    } else {
+        console.error(`[DEPOSIT] User ${deposit.userId} NOT found for rejection email.`);
+    }
   
     res.json({ success: true });
   };

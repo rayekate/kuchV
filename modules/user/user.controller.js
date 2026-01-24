@@ -1,5 +1,6 @@
 import User from "./user.model.js";
 import bcrypt from "bcrypt";
+import { sendTransactionalEmail } from "../notification/email-notification.service.js";
 
 export const getMe = async (req, res) => {
     const user = await User.findById(req.user.userId);
@@ -61,6 +62,11 @@ export const changePassword = async (req, res) => {
         user.passwordHash = await bcrypt.hash(newPassword, 10);
         await user.save();
         
+        // Notify user via email
+        sendTransactionalEmail(user, "PASSWORD_CHANGED").catch(err => 
+            console.error("[PASSWORD_CHANGE_NOTIFICATION] Error:", err.message)
+        );
+
         res.json({ success: true, message: "Password updated" });
     } catch (error) {
         res.status(500).json({ message: "Update failed" });
