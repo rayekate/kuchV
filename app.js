@@ -1,5 +1,7 @@
 import express from "express";
 import dotenv from "dotenv";
+dotenv.config();
+
 import cors from "cors";
 import cookieParser from "cookie-parser";
 
@@ -18,9 +20,11 @@ import ticketRoutes from "./modules/ticket/ticket.routes.js";
 import notificationRoutes from "./modules/notification/notification.routes.js";
 import settingRoutes from "./modules/settings/settings.routes.js";
 import mailTestRoutes from "./modules/admin/mailTest.routes.js";
+import { loggingMiddleware } from "./utils/logging.middleware.js";
 
 
-dotenv.config();
+
+
 
 const app = express();
 
@@ -33,9 +37,13 @@ connectDB().catch(err => {
     // Do not exit, allow server to start so we can see logs
 });
 registerProfitCron();
+
 // Body parsing
 app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: true }));
+
+// Global Logging Middleware (After body parsing so we can log request body)
+app.use(loggingMiddleware);
 
 // Cookies (refresh token support)
 app.use(cookieParser());
@@ -163,9 +171,21 @@ const PORT = process.env.PORT || 3000;
 if (process.env.NODE_ENV !== "production") {
   httpServer.listen(PORT, () => {
     console.log(`Server running on port ${PORT} (Socket.io enabled)`);
+  }).on("error", (err) => {
+    console.error("\n[CRITICAL] Server failed to start:", err);
   });
 }
 // Force Restart 3 - Wallet IDs Standardized - 2026-01-12
 console.log("Server Routes Loaded: /api/notifications should be active");
 
 export default app;
+
+// Global Error Handlers for Uncaught Exceptions and Unhandled Rejections
+process.on("uncaughtException", (err) => {
+  console.error("\n[CRITICAL] Uncaught Exception:", err);
+  // Optional: Graceful shutdown or restart logic
+});
+
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("\n[CRITICAL] Unhandled Rejection at:", promise, "reason:", reason);
+});
