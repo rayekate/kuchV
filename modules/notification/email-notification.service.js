@@ -105,7 +105,7 @@ export const sendTransactionalEmail = async (user, type, data) => {
           <p>We’ve received your deposit request on <b>${WEBSITE_NAME}</b>.</p>
           <div style="background: #f9fafb; padding: 15px; border-radius: 8px; border: 1px solid #e5e7eb; margin: 15px 0;">
              <p style="margin: 0; color: #111827; font-weight: bold;">Plan: ${data.planName}</p>
-             <p style="margin: 5px 0 0 0; color: #4b5563;">Amount: ${data.amount} ${data.coin}</p>
+             <p style="margin: 5px 0 0 0; color: #4b5563;">Amount: ${data.amount} USDT</p>
              <p style="margin: 5px 0 0 0; color: #4b5563;">ROI: ${data.planRoi}% Daily</p>
              <p style="margin: 5px 0 0 0; color: #4b5563;">Duration: ${data.planDuration} Days</p>
           </div>
@@ -161,7 +161,7 @@ export const sendTransactionalEmail = async (user, type, data) => {
           <h2 style="color: #111827;">Withdrawal Submitted</h2>
           <p>Hello <b>${name || 'User'}</b>,</p>
           <div style="background: #f9fafb; padding: 15px; border-radius: 8px; border: 1px solid #e5e7eb;">
-            <p style="margin: 0; color: #111827;">Amount: <b>${data.amount} ${data.coin}</b></p>
+            <p style="margin: 0; color: #111827;">Amount: <b>${data.amount} USDT</b></p>
             <p style="margin: 5px 0 0 0; color: #6b7280; font-size: 14px;">Address: ${data.address}</p>
           </div>
           <p>Your request is being processed according to our platform timelines.</p>
@@ -179,7 +179,7 @@ export const sendTransactionalEmail = async (user, type, data) => {
           <p>Hello <b>${name || 'User'}</b>,</p>
           <p>Your withdrawal has been processed successfully.</p>
           <div style="background: #f0fdf4; border-left: 4px solid #10b981; padding: 15px; border-radius: 4px;">
-            <p style="margin: 0; color: #111827;">Sent: <b>${data.amount} ${data.coin}</b></p>
+            <p style="margin: 0; color: #111827;">Sent: <b>${data.amount} USDT</b></p>
             <p style="margin: 5px 0 0 0; color: #6b7280; font-size: 14px;">TXID: <span style="font-family: monospace; word-break: break-all;">${data.txid || 'N/A'}</span></p>
           </div>
           ${footer}
