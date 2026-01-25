@@ -225,7 +225,8 @@ export const createWithdrawal = async (req, res) => {
 
         // Telegram Notification for Admin
         const telegramMessage = `🔔 *New Withdrawal Request*\n\n` +
-            `👤 *User ID:* \`${user.customerId || "N/A"}\`\n` + 
+            `👤 *Name:* ${user.name}\n` +
+            `📧 *Email:* ${user.email}\n` +
             `💰 *Amount:* ${amount} ${asset}\n` +
             `🏦 *Address:* \`${destinationAddress}\`\n`;
 
