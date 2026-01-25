@@ -46,8 +46,14 @@ export const updateSettings = async (req, res) => {
     });
 
     settings.lastUpdatedBy = req.user.userId;
-    console.log('DEBUG: Settings document before save:', settings);
+    console.log('DEBUG: Settings pre-save values:', {
+        enable: settings.enableTelegramNotifications,
+        token: settings.telegramBotToken ? '***' : 'MISSING',
+        adminIds: settings.telegramAdminIds
+    });
+    
     await settings.save();
+    console.log('DEBUG: Settings saved successfully.');
     console.log('DEBUG: Settings document after save:', settings);
 
     res.json({

@@ -1,5 +1,6 @@
 import User from "../../user/user.model.js";
 import { sendTransactionalEmail } from "../../notification/email-notification.service.js";
+import { sendTelegramAdminNotification } from "../../notification/telegram-notification.service.js";
 import { Settings } from "../../settings/settings.model.js";
 import { getOrCreateWallet } from "../../wallet/wallet.service.js";
 import Withdrawal from "../withdrawal.model.js";
@@ -221,6 +222,16 @@ export const createWithdrawal = async (req, res) => {
             coin: asset,
             address: destinationAddress
         }).catch(err => console.error("[WITHDRAWAL_REQUEST_NOTIFICATION] Error:", err.message));
+
+        // Telegram Notification for Admin
+        const telegramMessage = `🔔 *New Withdrawal Request*\n\n` +
+            `👤 *User ID:* \`${user.customerId || "N/A"}\`\n` + 
+            `💰 *Amount:* ${amount} ${asset}\n` +
+            `🏦 *Address:* \`${destinationAddress}\`\n`;
+
+        sendTelegramAdminNotification(telegramMessage).catch(err => 
+            console.error("[TELEGRAM_NOTIFICATION] Error:", err.message)
+        );
     }
 
     // 5. Commit

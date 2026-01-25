@@ -6,7 +6,10 @@
   "main": "app.js",
   "scripts": {
     "start": "node app.js",
-    "dev": "nodemon"
+    "dev": "nodemon",
+    "verify-telegram": "node scripts/verify-telegram.js",
+    "fix-telegram": "node scripts/fix-telegram-settings.js",
+    "debug-bot": "node scripts/debug-telegram-bot.js"
   },
   "keywords": [],
   "author": "",
@@ -24,7 +27,7 @@
     "express-validator": "^7.3.1",
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.3",
-    "mongoose": "^9.1.2",
+    "mongoose": "^9.1.5",
     "multer": "^2.0.2",
     "node-cron": "^4.2.1",
     "nodemailer": "^7.0.12",

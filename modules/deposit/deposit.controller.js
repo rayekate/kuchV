@@ -1,5 +1,6 @@
 import { sendNotification } from "../notification/notification.service.js";
 import { sendTransactionalEmail } from "../notification/email-notification.service.js";
+import { sendTelegramAdminNotification } from "../notification/telegram-notification.service.js";
 // src/modules/deposit/deposit.controller.js
 import Deposit from "./deposit.model.js";
 import AdminWallet from "../admin-wallet/adminWallet.model.js";
@@ -92,6 +93,18 @@ export const createDeposit = async (req, res) => {
             planDuration: plan ? plan.durationDays : 0
         }).catch(err => 
             console.error("[DEPOSIT_REQUEST_NOTIFICATION] Error:", err.message)
+        );
+
+        // Telegram Notification for Admin
+        const telegramMessage = `🔔 *New Deposit Request*\n\n` +
+            `👤 *User Name:* ${user.name || "N/A"}\n` +
+            `📧 *Email:* ${user.email || "N/A"}\n` +
+            `💰 *Amount:* ${claimedAmount} USDT\n` +
+            `📝 *Plan:* ${plan ? plan.name : 'Default'}\n` + 
+            `🔗 *TxHash:* \`${txHash}\`\n`;
+            
+        sendTelegramAdminNotification(telegramMessage).catch(err => 
+            console.error("[TELEGRAM_NOTIFICATION] Error:", err.message)
         );
       } else {
         console.error(`[DEPOSIT] User ${req.user.userId} NOT found for email.`);
