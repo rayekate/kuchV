@@ -22,7 +22,7 @@ transporter.verify((err, success) => {
 export const sendEmail = async ({ to, subject, html, text }) => {
   try {
     await transporter.sendMail({
-      from: process.env.EMAIL_FROM || `"Crypto App" <${process.env.EMAIL_USER}>`,
+      from: "Carigo Support <Admin@carigo.xyz>",
       to,
       subject,
       text,
