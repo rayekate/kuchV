@@ -84,6 +84,10 @@ const settingsSchema = new mongoose.Schema({
     type: Number,
     default: 10
   },
+  requireTxHash: {
+    type: Boolean,
+    default: true
+  },
 
   // Telegram Notifications
   enableTelegramNotifications: {

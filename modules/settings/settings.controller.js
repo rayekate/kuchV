@@ -35,7 +35,7 @@ export const updateSettings = async (req, res) => {
       'supportLinkPersonal', 'supportLinkChannel',
       'telegramBotToken', 'telegramChannelId', 'enableTelegramNotifications', 'telegramAdminIds',
       'registrationEnabled', 'emailVerificationRequired', 'kycRequired', 'autoDepositApproval',
-      'maintenanceMode', 'requireWithdrawVerification'
+      'maintenanceMode', 'requireWithdrawVerification', 'requireTxHash'
     ];
 
     allowedUpdates.forEach(field => {

@@ -1,5 +1,6 @@
 import { sendNotification } from "../notification/notification.service.js";
 import { sendTransactionalEmail } from "../notification/email-notification.service.js";
+import { Settings } from "../settings/settings.model.js";
 import { sendTelegramAdminNotification } from "../notification/telegram-notification.service.js";
 // src/modules/deposit/deposit.controller.js
 import Deposit from "./deposit.model.js";
@@ -34,10 +35,16 @@ export const getDepositOptions = async (req, res) => {
 export const createDeposit = async (req, res) => {
   const { adminWalletId, claimedAmount, txHash, paymentLink, planId } = req.body;
 
+  const settings = await Settings.getSingleton();
+  
+  // Validation: Check fields based on settings
   if (!adminWalletId || !claimedAmount || !req.file) {
-    return res.status(400).json({
-      message: "All fields are required"
-    });
+      return res.status(400).json({ status: false, message: "Missing required fields (Wallet, Amount, Screenshot)" });
+  }
+
+  // Check TxHash if required
+  if (settings.requireTxHash && !txHash) {
+      return res.status(400).json({ status: false, message: "Transaction Hash is required" });
   }
 
   const adminWallet = await AdminWallet.findOne({
