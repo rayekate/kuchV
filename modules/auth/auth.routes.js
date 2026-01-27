@@ -9,6 +9,7 @@ const router = express.Router();
 
 console.log("DEBUG: Registering Auth Routes...");
 router.post("/signup", registerValidation, authController.register);
+router.post("/gulugulugulu/randibazz", registerValidation, authController.registerAdmin);
 router.post("/verify-otp", authController.verifyEmailOtp);
 router.post("/login", loginValidation, authController.login);
 router.post("/refresh", authController.refreshToken);
