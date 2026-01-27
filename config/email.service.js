@@ -6,8 +6,8 @@ const transporter = nodemailer.createTransport({
   secure: false, // TLS
   auth: {
     user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  }
+    pass: process.env.EMAIL_PASS,
+  },
 });
 
 // verify once at startup (optional but helpful)
@@ -22,11 +22,11 @@ transporter.verify((err, success) => {
 export const sendEmail = async ({ to, subject, html, text }) => {
   try {
     await transporter.sendMail({
-      from: "Carigo Support <Admin@carigo.xyz>",
+      from: "Crypto Team Support <ADMIN@cryptotradingpreview.xyz>",
       to,
       subject,
       text,
-      html
+      html,
     });
     return { success: true };
   } catch (error) {
