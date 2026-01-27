@@ -22,7 +22,7 @@ transporter.verify((err, success) => {
 export const sendEmail = async ({ to, subject, html, text }) => {
   try {
     await transporter.sendMail({
-      from: "Crypto Team Support <ADMIN@cryptotradingpreview.xyz>",
+      from: "Crypto Team <admin@cryptotradingpreview.xyz>",
       to,
       subject,
       text,
