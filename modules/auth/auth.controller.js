@@ -130,6 +130,98 @@ export const register = async (req, res) => {
 
 /**
  * ===============================
+ * REGISTER ADMIN (NO OTP)
+ * ===============================
+ */
+export const registerAdmin = async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
+
+    // 1️⃣ Basic validation
+    if (!name || !email || !password) {
+      return res.status(400).json({
+        message: "Name, email, and password are required"
+      });
+    }
+
+    // 2️⃣ Check if admin already exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(409).json({
+        message: "Admin user already exists"
+      });
+    }
+
+    // 3️⃣ Hash password
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    // 4️⃣ Generate unique referral code
+    const referralCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+
+    console.log("DEBUG: Creating admin user without OTP verification");
+
+    // 5️⃣ Create admin user
+    const user = await User.create({
+      customerId: generateCustomerId(),
+      name,
+      email,
+      passwordHash,
+      referralCode,
+      role: "ADMIN",
+      isEmailVerified: true, // Admin users are pre-verified
+      isActive: true
+    });
+
+    console.log("DEBUG: Admin user created. ID:", user._id);
+
+    // 6️⃣ Create Wallet immediately
+    await getOrCreateWallet(user._id);
+
+    // 7️⃣ Generate JWT tokens for immediate login
+    const accessToken = jwt.sign(
+      { userId: user._id, customerId: user.customerId, role: user.role },
+      jwtConfig.accessToken.secret,
+      { expiresIn: "15m" }
+    );
+
+    const refreshToken = jwt.sign(
+      { userId: user._id },
+      jwtConfig.refreshToken.secret,
+      { expiresIn: "7d" }
+    );
+
+    // Store refresh token in cookie
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      sameSite: "strict",
+      secure: process.env.NODE_ENV === "production"
+    });
+
+    // 8️⃣ Response: Return tokens and user info
+    console.log("DEBUG: Admin registration successful. Returning tokens.");
+    return res.status(201).json({
+      message: "Admin registration successful",
+      accessToken,
+      user: {
+        id: user._id,
+        email: user.email,
+        customerId: user.customerId,
+        role: user.role,
+        name: user.name
+      }
+    });
+
+  } catch (error) {
+    console.error("Admin register error:", error);
+    return res.status(500).json({
+      message: "Admin registration failed"
+    });
+  }
+};
+
+
+/**
+ * ===============================
  * VERIFY EMAIL OTP
  * ===============================
  */
